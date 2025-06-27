@@ -10,7 +10,14 @@ type SignupProps = {
 const API_BASE = 'http://localhost:8080/api/users';
 
 function Signup({ onBack, onSignupSuccess }: SignupProps) {
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ 
+    firstName: '', 
+    lastName: '', 
+    email: '', 
+    password: '',
+    cookingLevel: null as number | null,
+    dietaryRestrictionIds: [] as number[]
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,15 +32,25 @@ function Signup({ onBack, onSignupSuccess }: SignupProps) {
     setError(null);
     
     try {
-      const res = await fetch(`${API_BASE}/add`, {
+      const res = await fetch(`${API_BASE}/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: form.name, email: form.email }),
+        body: JSON.stringify(form),
       });
       
-      if (!res.ok) throw new Error('Failed to create account');
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || 'Failed to create account');
+      }
       
-      setForm({ name: '', email: '', password: '' });
+      setForm({ 
+        firstName: '', 
+        lastName: '', 
+        email: '', 
+        password: '',
+        cookingLevel: null,
+        dietaryRestrictionIds: []
+      });
       onSignupSuccess();
     } catch (err) {
       setError((err as Error).message);
@@ -50,15 +67,28 @@ function Signup({ onBack, onSignupSuccess }: SignupProps) {
         
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="name">Full Name</label>
+            <label htmlFor="firstName">First Name</label>
             <input
-              id="name"
-              name="name"
+              id="firstName"
+              name="firstName"
               type="text"
-              value={form.name}
+              value={form.firstName}
               onChange={handleChange}
               required
-              placeholder="Enter your full name"
+              placeholder="Enter your first name"
+            />
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="lastName">Last Name</label>
+            <input
+              id="lastName"
+              name="lastName"
+              type="text"
+              value={form.lastName}
+              onChange={handleChange}
+              required
+              placeholder="Enter your last name"
             />
           </div>
           

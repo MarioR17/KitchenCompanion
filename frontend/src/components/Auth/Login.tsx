@@ -7,6 +7,8 @@ type LoginProps = {
   onLoginSuccess: () => void;
 };
 
+const API_BASE = 'http://localhost:8080/api/users';
+
 function Login({ onBack, onLoginSuccess }: LoginProps) {
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
@@ -22,12 +24,29 @@ function Login({ onBack, onLoginSuccess }: LoginProps) {
     setLoading(true);
     setError(null);
     
-    // TODO: Replace with actual login API call
-    // For now, just simulate login
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const res = await fetch(`${API_BASE}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || 'Failed to login');
+      }
+      
+      const userData = await res.json();
+      // You can store user data in localStorage or context if needed
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      setForm({ email: '', password: '' });
       onLoginSuccess();
-    }, 1000);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
