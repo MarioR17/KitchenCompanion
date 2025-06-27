@@ -65,6 +65,37 @@ button:disabled {
 
 input {
   font-family: inherit;
+  background-color: white !important;
+  color: #333 !important;
+}
+
+input:focus {
+  background-color: white !important;
+}
+
+textarea {
+  font-family: inherit;
+  background-color: white !important;
+  color: #333 !important;
+}
+
+textarea:focus {
+  background-color: white !important;
+}
+
+select {
+  font-family: inherit;
+  background-color: white !important;
+  color: #333 !important;
+}
+
+select:focus {
+  background-color: white !important;
+}
+
+select option {
+  background-color: white !important;
+  color: #333 !important;
 }
 
 .app {
@@ -79,5 +110,17 @@ input {
   }
   button {
     background-color: #1a1a1a;
+  }
+  /* Ensure form inputs stay white regardless of dark mode */
+  input, textarea, select {
+    background-color: white !important;
+    color: #333 !important;
+  }
+  input:focus, textarea:focus, select:focus {
+    background-color: white !important;
+  }
+  select option {
+    background-color: white !important;
+    color: #333 !important;
   }
 }
