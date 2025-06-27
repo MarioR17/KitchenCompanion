@@ -11,13 +11,13 @@ function Landing({ onLogin, onSignup, onGuest }: LandingProps) {
     <div className="landing-container">
       <div className="landing-hero">
         <div className="hero-content">
-          <h1 className="hero-title">Kitchen Companion</h1>
+          <h1 className="hero-title">ChefMate™</h1>
           <p className="hero-subtitle">
-            Your AI-powered cooking assistant that transforms your kitchen experience
+            Empowering Confidence In Every Chef
           </p>
           <p className="hero-description">
             Discover recipes, plan meals, manage ingredients, and cook with confidence. 
-            Kitchen Companion makes cooking enjoyable and effortless for everyone.
+            ChefMate makes cooking enjoyable and effortless for everyone.
           </p>
           
           <div className="hero-buttons">

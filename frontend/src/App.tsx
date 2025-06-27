@@ -9,28 +9,58 @@ type AppView = 'landing' | 'login' | 'signup' | 'dashboard';
 function App() {
   const [currentView, setCurrentView] = useState<AppView>('landing');
 
+  // Get current view from URL path
+  const getCurrentViewFromPath = (): AppView => {
+    const path = window.location.pathname;
+    switch (path) {
+      case '/':
+        return 'landing';
+      case '/login':
+        return 'login';
+      case '/signup':
+        return 'signup';
+      case '/dashboard':
+        return 'dashboard';
+      default:
+        // For any unknown path, redirect to landing and return landing
+        console.warn(`Unknown route: ${path}, redirecting to landing`);
+        window.history.replaceState(null, '', '/');
+        return 'landing';
+    }
+  };
+
+  // Initialize view from URL on component mount
+  useEffect(() => {
+    const viewFromPath = getCurrentViewFromPath();
+    setCurrentView(viewFromPath);
+  }, []);
+
   // Handle browser back/forward buttons
   useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      const view = event.state?.view || 'landing';
-      setCurrentView(view);
+    const handlePopState = () => {
+      const viewFromPath = getCurrentViewFromPath();
+      setCurrentView(viewFromPath);
     };
 
     window.addEventListener('popstate', handlePopState);
-
-    // Set initial state
-    if (!window.history.state) {
-      window.history.replaceState({ view: 'landing' }, '', '/');
-    }
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 
+  // Update browser URL when view changes programmatically
+  useEffect(() => {
+    const expectedPath = currentView === 'landing' ? '/' : `/${currentView}`;
+    if (window.location.pathname !== expectedPath) {
+      window.history.replaceState(null, '', expectedPath);
+    }
+  }, [currentView]);
+
   const navigateTo = (view: AppView) => {
+    const path = view === 'landing' ? '/' : `/${view}`;
     setCurrentView(view);
-    window.history.pushState({ view }, '', `/${view === 'landing' ? '' : view}`);
+    window.history.pushState(null, '', path);
   };
 
   const showLanding = () => navigateTo('landing');
@@ -49,6 +79,8 @@ function App() {
       case 'dashboard':
         return <Dashboard onLogout={showLanding} />;
       default:
+        // If unknown route, redirect to landing
+        window.history.replaceState(null, '', '/');
         return <Landing onLogin={showLogin} onSignup={showSignup} onGuest={showDashboard} />;
     }
   };
