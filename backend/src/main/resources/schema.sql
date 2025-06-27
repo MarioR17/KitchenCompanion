@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS Users (
   firstName TEXT NOT NULL,
   lastName TEXT NOT NULL,
   email TEXT NOT NULL,
-  password TEXT NOT NULL
+  password TEXT NOT NULL,
   cookingLevel INTEGER, 
   FOREIGN KEY (cookingLevel) REFERENCES CookingLevel(cookingId)
 );
@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS UsersDietaryRestrictions (
   user_id INTEGER,
   restriction_id INTEGER,
   PRIMARY KEY (user_id, restriction_id),
-  FOREIGN KEY (userId) REFERENCES Users(userId),
-  FOREIGN KEY (restrictionId) REFERENCES DietaryRestrictions(restrictionId)
+  FOREIGN KEY (user_id) REFERENCES Users(userId),
+  FOREIGN KEY (restriction_id) REFERENCES DietaryRestrictions(restrictionId)
 );
 
 CREATE TABLE IF NOT EXISTS DietaryRestrictions (
