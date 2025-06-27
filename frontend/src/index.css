@@ -4,13 +4,17 @@
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: #213547;
+  background-color: #ffffff;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 a {
@@ -24,8 +28,6 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
 }
@@ -42,27 +44,83 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: #f9f9f9;
   cursor: pointer;
   transition: border-color 0.25s;
 }
+
 button:hover {
   border-color: #646cff;
 }
+
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+input {
+  font-family: inherit;
+  background-color: white !important;
+  color: #333 !important;
+}
+
+input:focus {
+  background-color: white !important;
+}
+
+textarea {
+  font-family: inherit;
+  background-color: white !important;
+  color: #333 !important;
+}
+
+textarea:focus {
+  background-color: white !important;
+}
+
+select {
+  font-family: inherit;
+  background-color: white !important;
+  color: #333 !important;
+}
+
+select:focus {
+  background-color: white !important;
+}
+
+select option {
+  background-color: white !important;
+  color: #333 !important;
+}
+
+.app {
+  width: 100%;
+  min-height: 100vh;
+}
+
+@media (prefers-color-scheme: dark) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
+    color: #ffffff;
+    background-color: #242424;
   }
   button {
-    background-color: #f9f9f9;
+    background-color: #1a1a1a;
+  }
+  /* Ensure form inputs stay white regardless of dark mode */
+  input, textarea, select {
+    background-color: white !important;
+    color: #333 !important;
+  }
+  input:focus, textarea:focus, select:focus {
+    background-color: white !important;
+  }
+  select option {
+    background-color: white !important;
+    color: #333 !important;
   }
 }

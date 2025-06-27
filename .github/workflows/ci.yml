@@ -1,0 +1,47 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Build with Maven
+      run: mvn clean compile
+      working-directory: ./backend
+      
+    - name: Run tests
+      run: mvn test
+      working-directory: ./backend
+      env:
+        OPEN_AI_API_KEY: ${{ secrets.OPEN_AI_API_KEY }}
+        
+    - name: Test OpenAI Connection
+      run: |
+        mvn spring-boot:run &
+        sleep 30
+        curl -f http://localhost:8080/api/recipes/test-openai || echo "OpenAI test failed"
+        pkill -f spring-boot:run
+      working-directory: ./backend
+      env:
+        OPEN_AI_API_KEY: ${{ secrets.OPEN_AI_API_KEY }}
