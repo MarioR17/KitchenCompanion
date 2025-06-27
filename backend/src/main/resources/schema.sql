@@ -4,20 +4,16 @@ CREATE TABLE IF NOT EXISTS Users (
   lastName TEXT NOT NULL,
   email TEXT NOT NULL,
   password TEXT NOT NULL,
+  userPreference INTEGER, 
   cookingLevel INTEGER, 
-  FOREIGN KEY (cookingLevel) REFERENCES CookingLevel(cookingId)
+  FOREIGN KEY (cookingLevel) REFERENCES CookingLevel(cookingId), 
+  FOREIGN KEY (userPreference) REFERENCES UserPreferences(preferenceId)
 );
 
-CREATE TABLE IF NOT EXISTS DietaryRestrictions (
-  restrictionId INTEGER PRIMARY KEY AUTOINCREMENT, 
-  restriction TEXT NOT NULL
-  user_id INTEGER,
-  FOREIGN KEY (user_id) REFERENCES Users(userId)
-)
-
-CREATE TABLE IF NOT EXISTS DietaryRestrictions (
-  restrictionId INTEGER PRIMARY KEY AUTOINCREMENT, 
-  restriction TEXT NOT NULL
+CREATE TABLE UserPreferences (
+  preferenceId INTEGER PRIMARY KEY AUTOINCREMENT, 
+  dietaryRestrictions TEXT, 
+  dietaryPreferences TEXT
 );
 
 CREATE TABLE IF NOT EXISTS CookingLevel (
