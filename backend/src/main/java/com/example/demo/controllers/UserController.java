@@ -11,45 +11,45 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
+
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    // --------- SIGN UP ----------
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody User newUser) {
+        // 1. Make sure user doesn't already exist
         String existsSql = "SELECT count(*) FROM Users WHERE email = ?";
-        int exists = jdbcTemplate.queryForObject(existsSql, Integer.class, newUser.getEmail());
-        if (exists > 0) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body("User with this email already exists.");
+        Integer exists = jdbcTemplate.queryForObject(existsSql, Integer.class, newUser.getEmail());
+        if (exists != null && exists > 0) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("User with this email already exists.");
         }
 
-        String insertSql = "INSERT INTO Users (firstName, lastName, email, password, cookingLevel) VALUES (?, ?, ?, ?, ?)";
-        org.springframework.jdbc.support.GeneratedKeyHolder keyHolder = new org.springframework.jdbc.support.GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            java.sql.PreparedStatement ps = connection.prepareStatement(insertSql, new String[]{"userId"});
-            ps.setString(1, newUser.getFirstName());
-            ps.setString(2, newUser.getLastName());
-            ps.setString(3, newUser.getEmail());
-            ps.setString(4, newUser.getPassword());
-            if (newUser.getCookingLevel() == null) {
-                ps.setNull(5, java.sql.Types.INTEGER);
-            } else {
-                ps.setInt(5, newUser.getCookingLevel());
-            }
+        // 2. Insert into UserPreferences
+        String prefInsertSql = "INSERT INTO UserPreferences (dietaryRestrictions, dietaryPreferences) VALUES (?, ?)";
+        org.springframework.jdbc.support.GeneratedKeyHolder prefKey = new org.springframework.jdbc.support.GeneratedKeyHolder();
+        jdbcTemplate.update(conn -> {
+            java.sql.PreparedStatement ps = conn.prepareStatement(prefInsertSql, new String[]{"preferenceId"});
+            ps.setString(1, newUser.getDietaryRestrictions());
+            ps.setString(2, newUser.getDietaryPreferences());
             return ps;
-        }, keyHolder);
-        Integer newUserId = keyHolder.getKey().intValue();
+        }, prefKey);
+        Integer userPreferenceId = prefKey.getKey().intValue();
 
-        if (newUser.getDietaryRestrictionIds() != null) {
-            for (Integer restrictionId : newUser.getDietaryRestrictionIds()) {
-                String drSql = "INSERT INTO UsersDietaryRestrictions (user_id, restriction_id) VALUES (?, ?)";
-                jdbcTemplate.update(drSql, newUserId, restrictionId);
-            }
-        }
-
+        // 3. Insert user, refer to UserPreferences row
+        String userInsertSql = "INSERT INTO Users (firstName, lastName, email, password, cookingLevel, userPreference) VALUES (?, ?, ?, ?, ?, ?)";
+        jdbcTemplate.update(userInsertSql,
+                newUser.getFirstName(),
+                newUser.getLastName(),
+                newUser.getEmail(),
+                newUser.getPassword(),
+                newUser.getCookingLevel(),
+                userPreferenceId
+        );
         return ResponseEntity.ok("Signup successful!");
     }
 
+    // --------- LOGIN ----------
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         String sql = "SELECT * FROM Users WHERE email = ? AND password = ?";
@@ -62,19 +62,41 @@ public class UserController {
                 user.setLastName(rs.getString("lastName"));
                 user.setEmail(rs.getString("email"));
                 user.setPassword(rs.getString("password"));
-                int cookingLevelVal = rs.getInt("cookingLevel");
-                user.setCookingLevel(rs.wasNull() ? null : cookingLevelVal);
+                user.setCookingLevel(rs.getInt("cookingLevel"));
+                user.setUserPreference(rs.getInt("userPreference"));
+
+                // Fetch UserPreferences
+                String prefSql = "SELECT * FROM UserPreferences WHERE preferenceId = ?";
+                jdbcTemplate.query(prefSql, new Object[]{user.getUserPreference()}, (prs, prow) -> {
+                    user.setDietaryRestrictions(prs.getString("dietaryRestrictions"));
+                    user.setDietaryPreferences(prs.getString("dietaryPreferences"));
+                    return null;
+                });
+
                 return user;
             }
         );
         if (!users.isEmpty()) {
             return ResponseEntity.ok(users.get(0));
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body("User not found. Please sign up.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found. Please sign up.");
         }
     }
 
+    // --------- GET ALL COOKING LEVELS ----------
+    @GetMapping("/cookingLevels")
+    public List<CookingLevel> getCookingLevels() {
+        String sql = "SELECT cookingId, cookingLevel, cookingDescription FROM CookingLevel";
+        return jdbcTemplate.query(sql,
+            (rs, rowNum) -> new CookingLevel(
+                rs.getInt("cookingId"),
+                rs.getString("cookingLevel"),
+                rs.getString("cookingDescription")
+            )
+        );
+    }
+
+    // --------- MODELS ---------
     public static class User {
         private Integer userId;
         private String firstName;
@@ -82,52 +104,41 @@ public class UserController {
         private String email;
         private String password;
         private Integer cookingLevel;
-        private List<Integer> dietaryRestrictionIds;
+        private Integer userPreference;
+
+        // Preferences fields (for join result & signup)
+        private String dietaryRestrictions;
+        private String dietaryPreferences;
 
         public User() {}
 
-        public Integer getUserId() {
-            return userId;
-        }
-        public void setUserId(Integer userId) {
-            this.userId = userId;
-        }
-        public String getFirstName() {
-            return firstName;
-        }
-        public void setFirstName(String firstName) {
-            this.firstName = firstName;
-        }
-        public String getLastName() {
-            return lastName;
-        }
-        public void setLastName(String lastName) {
-            this.lastName = lastName;
-        }
-        public String getEmail() {
-            return email;
-        }
-        public void setEmail(String email) {
-            this.email = email;
-        }
-        public String getPassword() {
-            return password;
-        }
-        public void setPassword(String password) {
-            this.password = password;
-        }
-        public Integer getCookingLevel() {
-            return cookingLevel;
-        }
-        public void setCookingLevel(Integer cookingLevel) {
-            this.cookingLevel = cookingLevel;
-        }
-        public List<Integer> getDietaryRestrictionIds() {
-            return dietaryRestrictionIds;
-        }
-        public void setDietaryRestrictionIds(List<Integer> dietaryRestrictionIds) {
-            this.dietaryRestrictionIds = dietaryRestrictionIds;
-        }
+        // Getters and setters...
+        public Integer getUserId() { return userId; }
+        public void setUserId(Integer userId) { this.userId = userId; }
+
+        public String getFirstName() { return firstName; }
+        public void setFirstName(String firstName) { this.firstName = firstName; }
+
+        public String getLastName() { return lastName; }
+        public void setLastName(String lastName) { this.lastName = lastName; }
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+
+        public String getPassword() { return password; }
+        public void setPassword(String password) { this.password = password; }
+
+        public Integer getCookingLevel() { return cookingLevel; }
+        public void setCookingLevel(Integer cookingLevel) { this.cookingLevel = cookingLevel; }
+
+        public Integer getUserPreference() { return userPreference; }
+        public void setUserPreference(Integer userPreference) { this.userPreference = userPreference; }
+
+        public String getDietaryRestrictions() { return dietaryRestrictions; }
+        public void setDietaryRestrictions(String dietaryRestrictions) { this.dietaryRestrictions = dietaryRestrictions; }
+
+        public String getDietaryPreferences() { return dietaryPreferences; }
+        public void setDietaryPreferences(String dietaryPreferences) { this.dietaryPreferences = dietaryPreferences; }
     }
 
     public static class LoginRequest {
@@ -135,9 +146,29 @@ public class UserController {
         private String password;
 
         public LoginRequest() {}
+
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
+    }
+
+    public static class CookingLevel {
+        private Integer cookingId;
+        private String cookingLevel;
+        private String cookingDescription;
+
+        public CookingLevel() {}
+        public CookingLevel(Integer id, String level, String desc) {
+            this.cookingId = id;
+            this.cookingLevel = level;
+            this.cookingDescription = desc;
+        }
+        public Integer getCookingId() { return cookingId; }
+        public void setCookingId(Integer cookingId) { this.cookingId = cookingId; }
+        public String getCookingLevel() { return cookingLevel; }
+        public void setCookingLevel(String cookingLevel) { this.cookingLevel = cookingLevel; }
+        public String getCookingDescription() { return cookingDescription; }
+        public void setCookingDescription(String cookingDescription) { this.cookingDescription = cookingDescription; }
     }
 }
