@@ -1,107 +1,61 @@
-import { useState } from 'react';
-import type { ChangeEvent, FormEvent } from 'react';
+import { useState, useEffect } from 'react';
+import Landing from './components/Landing/Landing';
+import Login from './components/Auth/Login';
+import Signup from './components/Auth/Signup';
+import Dashboard from './components/Dashboard/Dashboard';
 
-// Define the User type to match your backend response
-type User = {
-  id: number;
-  name: string;
-  email: string;
-};
-
-const API_BASE = 'http://localhost:8080/api/users';
+type AppView = 'landing' | 'login' | 'signup' | 'dashboard';
 
 function App() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [form, setForm] = useState<{ name: string; email: string }>({
-    name: '',
-    email: '',
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<AppView>('landing');
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(API_BASE);
-      if (!res.ok) throw new Error('Failed to fetch users');
-      const data: User[] = await res.json();
-      setUsers(data);
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const view = event.state?.view || 'landing';
+      setCurrentView(view);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    // Set initial state
+    if (!window.history.state) {
+      window.history.replaceState({ view: 'landing' }, '', '/');
     }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  const navigateTo = (view: AppView) => {
+    setCurrentView(view);
+    window.history.pushState({ view }, '', `/${view === 'landing' ? '' : view}`);
   };
 
-  const addUser = async (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_BASE}/add`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) throw new Error('Failed to add user');
-      setForm({ name: '', email: '' });
-      await fetchUsers();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const showLanding = () => navigateTo('landing');
+  const showLogin = () => navigateTo('login');
+  const showSignup = () => navigateTo('signup');
+  const showDashboard = () => navigateTo('dashboard');
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'landing':
+        return <Landing onLogin={showLogin} onSignup={showSignup} onGuest={showDashboard} />;
+      case 'login':
+        return <Login onBack={showLanding} onLoginSuccess={showDashboard} />;
+      case 'signup':
+        return <Signup onBack={showLanding} onSignupSuccess={showDashboard} />;
+      case 'dashboard':
+        return <Dashboard onLogout={showLanding} />;
+      default:
+        return <Landing onLogin={showLogin} onSignup={showSignup} onGuest={showDashboard} />;
+    }
   };
 
   return (
-    <div style={{ maxWidth: 500, margin: '2rem auto', fontFamily: 'sans-serif' }}>
-      <h1>SQLite User List</h1>
-      <form onSubmit={addUser} style={{ marginBottom: '1rem' }}>
-        <input
-          name="name"
-          placeholder="Name"
-          value={form.name}
-          onChange={handleChange}
-          required
-          style={{ marginRight: 8 }}
-        />
-        <input
-          name="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={handleChange}
-          required
-          type="email"
-          style={{ marginRight: 8 }}
-        />
-        <button type="submit" disabled={loading}>
-          Add
-        </button>
-      </form>
-
-      <button type="button" onClick={fetchUsers} disabled={loading}>
-        {loading ? 'Loading...' : 'Load Users'}
-      </button>
-
-      {error && (
-        <div style={{ color: 'red', marginTop: 8 }}>
-          {error}
-        </div>
-      )}
-
-      <ul style={{ marginTop: 16 }}>
-        {users.map((u) => (
-          <li key={u.id}>
-            {u.name} ({u.email})
-          </li>
-        ))}
-      </ul>
+    <div>
+      {renderCurrentView()}
     </div>
   );
 }
